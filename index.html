@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+<title>Minnesota Citizenship Test Study</title>
+
+<style>
+:root{
+--bg:#f5f7fb;
+--card:#ffffff;
+--text:#1d1d1d;
+--accent:#1e5eff;
+--yellow:#fff59d;
+--yellow-border:#fbc02d;
+--green:#18a558;
+--red:#dc3545;
+}
+
+@media(prefers-color-scheme:dark){
+:root{
+--bg:#111827;
+--card:#1f2937;
+--text:#f3f4f6;
+--accent:#60a5fa;
+--yellow:#facc15;
+--yellow-border:#fde047;
+}
+}
+
+*{
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;
+background:var(--bg);
+color:var(--text);
+padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+}
+
+.container{
+max-width:700px;
+margin:auto;
+}
+
+h1{
+text-align:center;
+font-size:1.6rem;
+margin:12px 0 8px;
+}
+
+.progressWrap{
+background:#d7dce7;
+height:14px;
+border-radius:99px;
+overflow:hidden;
+margin-bottom:8px;
+}
+
+.progressBar{
+height:100%;
+width:0%;
+background:var(--accent);
+transition:.3s;
+}
+
+.stats{
+text-align:center;
+font-size:.9rem;
+margin-bottom:10px;
+}
+
+.section{
+font-size:1.35rem;
+font-weight:800;
+text-align:center;
+margin-top:10px;
+color:var(--accent);
+}
+
+.subsection{
+font-size:1rem;
+font-weight:700;
+text-align:center;
+background:var(--accent);
+color:white;
+padding:8px;
+border-radius:10px;
+margin:10px 0;
+}
+
+.card{
+background:var(--card);
+border-radius:20px;
+padding:20px;
+box-shadow:0 4px 15px rgba(0,0,0,.15);
+min-height:280px;
+}
+
+.qnum{
+font-size:.9rem;
+opacity:.8;
+text-align:center;
+margin-bottom:15px;
+}
+
+.question{
+font-size:1.4rem;
+font-weight:700;
+line-height:1.4;
+text-align:center;
+}
+
+.answer{
+display:none;
+margin-top:20px;
+background:var(--yellow);
+border:3px solid var(--yellow-border);
+border-radius:18px;
+padding:20px;
+font-size:1.35rem;
+font-weight:800;
+color:#000;
+}
+
+.reveal{
+margin-top:20px;
+text-align:center;
+font-weight:700;
+color:var(--accent);
+}
+
+.controls{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:8px;
+margin-top:15px;
+}
+
+button{
+border:none;
+border-radius:12px;
+padding:14px;
+font-size:1rem;
+font-weight:700;
+cursor:pointer;
+}
+
+.primary{
+background:var(--accent);
+color:white;
+}
+
+.good{
+background:var(--green);
+color:white;
+}
+
+.warn{
+background:#ff9800;
+color:white;
+}
+
+.danger{
+background:var(--red);
+color:white;
+}
+
+.secondary{
+background:#e5e7eb;
+}
+
+.hidden{
+display:none;
+}
+
+textarea{
+width:100%;
+height:120px;
+margin-top:8px;
+}
+
+input[type=file]{
+display:none;
+}
+
+.modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.5);
+display:none;
+align-items:center;
+justify-content:center;
+padding:20px;
+}
+
+.modalBox{
+background:white;
+max-width:400px;
+width:100%;
+padding:20px;
+border-radius:15px;
+color:black;
+}
+
+.footer{
+margin-top:15px;
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Minnesota Citizenship Test Study</h1>
+
+<div class="progressWrap">
+<div class="progressBar" id="progressBar"></div>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div class="section" id="sectionTitle"></div>
+<div class="subsection" id="subTitle"></div>
+
+<div class="card" id="card">
+
+<div class="qnum" id="qnum"></div>
+
+<div class="question" id="question"></div>
+
+<div class="reveal" id="tapLabel">
+Tap card to reveal answer
+</div>
+
+<div class="answer" id="answer"></div>
+
+</div>
+<div class="controls">
+
+<button class="good" onclick="markKnown()">
+✓ I Knew It
+</button>
+
+<button class="warn" onclick="markReview()">
+📌 Review Later
+</button>
+
+<button class="primary" onclick="previousCard()">
+◀ Previous
+</button>
+
+<button class="primary" onclick="nextCard()">
+Next ▶
+</button>
+
+<button class="primary" id="shuffleBtn" onclick="toggleShuffle()">
+Shuffle
+</button>
+
+<button class="danger" onclick="confirmRestart()">
+Restart
+</button>
+
+</div>
+
+<div class="footer">
+
+<button class="secondary" onclick="editCard()">
+✏ Edit
+</button>
+
+<button class="secondary" onclick="exportData()">
+Export
+</button>
+
+<button class="secondary" onclick="document.getElementById('importInput').click()">
+Import
+</button>
+
+<button class="secondary" onclick="startReviewDeck()">
+Review Deck
+</button>
+
+</div>
+
+<input id="importInput"
+type="file"
+accept=".json"
+onchange="importData(event)">
+
+</div>
+
+<div class="modal" id="modal">
+<div class="modalBox">
+
+<h3>Edit Card</h3>
+
+<label>Question</label>
+<textarea id="editQuestion"></textarea>
+
+<label>Answer(s)</label>
+<textarea id="editAnswer"></textarea>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;">
+
+<button class="primary" onclick="saveEdit()">
+Save
+</button>
+
+<button class="secondary" onclick="closeModal()">
+Cancel
+</button>
+
+</div>
+
+</div>
+</div>
+
+<div class="modal" id="restartModal">
+<div class="modalBox">
+
+<h3>Restart Study Session?</h3>
+
+<p>
+Progress will reset.<br>
+Review Deck will be preserved.
+</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+
+<button class="secondary"
+onclick="closeRestart()">
+Cancel
+</button>
+
+<button class="danger"
+onclick="restartSession()">
+Restart
+</button>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+const cards=[
+{
+id:1,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"What is the form of government of the United States?",
+a:["Republic"]
+},
+
+{
+id:2,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"What is the supreme law of the land?",
+a:["US Constitution"]
+},
+
+{
+id:3,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"Name one thing the U.S. Constitution does?",
+a:["Forms the government"]
+},
+
+{
+id:4,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"The U.S. Constitution starts with the words 'We the People.' What does 'We the People' mean?",
+a:["Self-government"]
+},
+
+{
+id:5,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"How are changes made to the U.S. Constitution?",
+a:["Amendments"]
+},
+
+{
+id:6,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"What does the Bill of Rights protect?",
+a:["The basic rights of Americans"]
+},
+
+{
+id:7,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"How many amendments does the U.S. Constitution have?",
+a:["Twenty-seven (27)"]
+},
+
+{
+id:8,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"Why is the Declaration of Independence important?",
+a:["It says all people are created equal."]
+},
+
+{
+id:9,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"What founding document said the American colonies were free from Britain?",
+a:["Declaration of Independence"]
+},
+
+{
+id:10,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"Name two important ideas from the Declaration of Independence and the U.S. Constitution.",
+a:["Equality","Liberty"]
+},
+
+{
+id:11,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"The words 'Life, Liberty and the pursuit of Happiness' are in what founding document?",
+a:["Declaration of Independence"]
+},
+
+{
+id:12,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"What is the economic system of the United States?",
+a:["Capitalism"]
+},
+
+{
+id:13,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"What is the rule of law?",
+a:["Everyone must follow the law."]
+},
+
+{
+id:14,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"Many documents influenced the U.S. Constitution. Name one.",
+a:["Declaration of Independence"]
+},
+
+{
+id:15,
+section:"American Government",
+sub:"A: Principles of American Government",
+q:"There are three branches of government. Why?",
+a:["Separation of powers"]
+},
+
+{
+id:16,
+section:"American Government",
+sub:"B: System of Government",
+q:"Name the three branches of government.",
+a:["Legislative, executive, and judicial"]
+},
+
+{
+id:17,
+section:"American Government",
+sub:"B: System of Government",
+q:"The President of the United States is in charge of which branch of government?",
+a:["Executive branch"]
+},
+
+{
+id:18,
+section:"American Government",
+sub:"B: System of Government",
+q:"What part of the federal government writes laws?",
+a:["(U.S.) Congress"]
+},
+
+{
+id:19,
+section:"American Government",
+sub:"B: System of Government",
+q:"What are the two parts of the U.S. Congress?",
+a:["Senate and House (of Representatives)"]
+},
+
+{
+id:20,
+section:"American Government",
+sub:"B: System of Government",
+q:"Name one power of the U.S. Congress.",
+a:["Writes laws"]
+},
+
+{
+id:21,
+section:"American Government",
+sub:"B: System of Government",
+q:"How many U.S. senators are there?",
+a:["One hundred (100)"]
+},
+
+{
+id:22,
+section:"American Government",
+sub:"B: System of Government",
+q:"How long is a term for a U.S. senator?",
+a:["Six (6) years"]
+},
+
+{
+id:23,
+section:"American Government",
+sub:"B: System of Government",
+q:"Who is one of your state's U.S. senators now?",
+a:["Amy Klobuchar or Tina Smith"]
+},
+
+{
+id:24,
+section:"American Government",
+sub:"B: System of Government",
+q:"How many voting members are in the House of Representatives?",
+a:["Four hundred thirty-five (435)"]
+},
+
+{
+id:25,
+section:"American Government",
+sub:"B: System of Government",
+q:"How long is a term for a member of the House of Representatives?",
+a:["Two (2) years"]
+},
+
+{
+id:26,
+section:"American Government",
+sub:"B: System of Government",
+q:"Why do U.S. representatives serve shorter terms than U.S. senators?",
+a:["To more closely follow public opinion"]
+},
+
+{
+id:27,
+section:"American Government",
+sub:"B: System of Government",
+q:"How many senators does each state have?",
+a:["Two (2)"]
+},
+
+{
+id:28,
+section:"American Government",
+sub:"B: System of Government",
+q:"Why does each state have two senators?",
+a:["Equal representation (for small states)"]
+},
+
+{
+id:29,
+section:"American Government",
+sub:"B: System of Government",
+q:"Name your U.S. representative.",
+a:["Pete Stauber"]
+},
+
+{
+id:30,
+section:"American Government",
+sub:"B: System of Government",
+q:"What is the name of the Speaker of the House of Representatives now?",
+a:["Mike Johnson"]
+},
+
+{
+id:31,
+section:"American Government",
+sub:"B: System of Government",
+q:"Who does a U.S. senator represent?",
+a:["Citizens of their state"]
+},
+
+{
+id:32,
+section:"American Government",
+sub:"B: System of Government",
+q:"Who elects U.S. senators?",
+a:["Citizens from their state"]
+},
+
+{
+id:33,
+section:"American Government",
+sub:"B: System of Government",
+q:"Who does a member of the House of Representatives represent?",
+a:["Citizens in their district"]
+},
+
+{
+id:34,
+section:"American Government",
+sub:"B: System of Government",
+q:"Who elects members of the House of Representatives?",
+a:["Citizens from their district"]
+},
+
+{
+id:35,
+section:"American Government",
+sub:"B: System of Government",
+q:"Some states have more representatives than other states. Why?",
+a:["The state's population"]
+},
+
+{
+id:36,
+section:"American Government",
+sub:"B: System of Government",
+q:"The President of the United States is elected for how many years?",
+a:["Four (4) years"]
+},
+
+{
+id:37,
+section:"American Government",
+sub:"B: System of Government",
+q:"The President of the United States can serve only two terms. Why?",
+a:["The 22nd Amendment"]
+},
+
+{
+id:38,
+section:"American Government",
+sub:"B: System of Government",
+q:"What is the name of the President of the United States now?",
+a:["Donald Trump"]
+},
+
+{
+id:39,
+section:"American Government",
+sub:"B: System of Government",
+q:"What is the name of the Vice President of the United States now?",
+a:["JD Vance"]
+},
+
+{
+id:40,
+section:"American Government",
+sub:"B: System of Government",
+q:"If the president can no longer serve, who becomes president?",
+a:["The Vice President"]
+},
+
+{
+id:41,
+section:"American Government",
+sub:"B: System of Government",
+q:"Name one power of the president.",
+a:["Signs bills into law","Enforces laws"]
+},
+
+{
+id:42,
+section:"American Government",
+sub:"B: System of Government",
+q:"Who is Commander in Chief of the U.S. military?",
+a:["The President"]
+},
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+];
+
+let deck=[...cards];
+let current=0;
+let revealed=false;
+let knownCount=0;
+let reviewDeck=JSON.parse(localStorage.getItem("reviewDeck")||"[]");
+let shuffleMode=false;
+let pendingShuffle=false;
+let reviewMode=false;
+let pendingShuffle=false;
+let viewedQuestions=JSON.parse(localStorage.getItem("viewedQuestions")||"[]");
+
+const card=document.getElementById("card");
+const qnum=document.getElementById("qnum");
+const question=document.getElementById("question");
+const answer=document.getElementById("answer");
+const bar=document.getElementById("progressBar");
+const stats=document.getElementById("stats");
+const sectionTitle=document.getElementById("sectionTitle");
+const subTitle=document.getElementById("subTitle");
+const tapLabel=document.getElementById("tapLabel");
+const shuffleBtn=document.getElementById("shuffleBtn");
+
+function saveState(){
+localStorage.setItem("studyCurrent",current);
+localStorage.setItem("studyKnown",knownCount);
+localStorage.setItem("reviewDeck",JSON.stringify(reviewDeck));
+localStorage.setItem("studyShuffle",shuffleMode);
+}
+
+function loadState(){
+current=parseInt(localStorage.getItem("studyCurrent")||0);
+knownCount=parseInt(localStorage.getItem("studyKnown")||0);
+shuffleMode=localStorage.getItem("studyShuffle")==="true";
+shuffleBtn.textContent=shuffleMode?"Ordered":"Shuffle";
+
+if(shuffleMode){
+deck=[...cards];
+shuffleArray(deck);
+}
+}
+
+function render(){
+
+if(current < 0) current = 0;
+
+if(current >= deck.length)
+current = deck.length - 1;
+
+const c = deck[current];
+
+sectionTitle.textContent = c.section;
+
+subTitle.textContent = c.sub;
+
+qnum.textContent =
+`Question ${c.id} of ${cards.length}`;
+
+question.textContent = c.q;
+
+answer.innerHTML =
+c.a.map(x => `• ${x}`)
+.join("<br>");
+
+answer.style.display = "none";
+
+tapLabel.style.display = "block";
+
+revealed = false;
+
+
+/* =========================
+   Progress Calculation
+   ========================= */
+
+if(!viewedQuestions.includes(c.id)){
+
+viewedQuestions.push(c.id);
+
+localStorage.setItem(
+"viewedQuestions",
+JSON.stringify(viewedQuestions)
+);
+
+}
+
+const pct =
+(viewedQuestions.length / cards.length)
+* 100;
+
+bar.style.width =
+Math.min(pct,100) + "%";
+
+
+/* =========================
+   Statistics
+   ========================= */
+
+const remaining =
+cards.length -
+viewedQuestions.length;
+
+stats.innerHTML =
+`
+✅ Known: ${knownCount}
+&nbsp;&nbsp; | &nbsp;&nbsp;
+📌 Review: ${reviewDeck.length}
+&nbsp;&nbsp; | &nbsp;&nbsp;
+👀 Viewed: ${viewedQuestions.length}
+&nbsp;&nbsp; | &nbsp;&nbsp;
+⏳ Remaining: ${remaining}
+`;
+
+saveState();
+
+}
+
+card.addEventListener("click",()=>{
+
+revealed=!revealed;
+
+answer.style.display=
+revealed?"block":"none";
+
+tapLabel.style.display=
+revealed?"none":"block";
+
+});
+
+function autoMarkKnown(){
+
+const id = deck[current].id;
+
+const cardObj =
+cards.find(c=>c.id===id);
+
+if(!cardObj) return;
+
+if(
+!cardObj.known &&
+!reviewDeck.includes(id)
+){
+
+cardObj.known = true;
+
+knownCount++;
+
+saveState();
+
+}
+
+}
+
+function nextCard(){
+
+autoMarkKnown();
+
+if(pendingShuffle){
+
+deck=[...cards];
+
+shuffleArray(deck);
+
+current=0;
+
+pendingShuffle=false;
+
+render();
+
+return;
+
+}
+
+if(current<deck.length-1){
+
+current++;
+render();
+
+}else{
+
+alert(
+"Session Complete!\n\n"+
+"Known: "+knownCount+
+"\nReview Later: "+reviewDeck.length
+);
+
+}
+
+}
+
+function previousCard(){
+
+if(current<=0){
+
+current=0;
+
+ren*er();
+
+return;
+
+}
+
+current--;
+
+render();
+
+}
+
+function markKnown(){
+
+const id = deck[current].id;
+
+const cardObj =
+cards.find(c=>c.id===id);
+
+let wasKnown = cardObj.known;
+
+if(wasKnown){
+
+alert("Already marked as Known");
+
+}else{
+
+alert("Marked as Known");
+
+}
+
+const reviewIndex =
+reviewDeck.indexOf(id);
+
+if(reviewIndex > -1){
+
+reviewDeck.splice(
+reviewIndex,
+1
+);
+
+
+if(
+reviewDeck.length===0 &&
+reviewMode
+){
+
+alert(
+"Review Deck Complete!\n\nReturning to Main Deck."
+);
+
+deck=[...cards]
+.sort((a,b)=>a.id-b.id);
+
+current=0;
+
+saveState();
+
+render();
+
+return;
+
+}
+
+}
+
+saveState();
+
+render();
+
+if(wasKnown){
+
+alert("Already marked as Known");
+
+}else{
+
+alert("Marked as Known");
+
+}
+
+}
+
+function markReview(){
+
+const id = deck[current].id;
+
+const cardObj =
+cards.find(c=>c.id===id);
+
+if(cardObj && cardObj.known){
+
+cardObj.known=false;
+
+if(knownCount>0){
+
+knownCount--;
+
+}
+
+}
+
+if(!reviewDeck.includes(id)){
+
+reviewDeck.push(id);
+
+saveState();
+
+alert("Added to Review Deck");
+
+}else{
+
+alert("Already in Review Deck");
+
+}
+
+render();
+
+}
+
+function toggleShuffle(){
+
+shuffleMode=!shuffleMode;
+
+if(shuffleMode){
+
+pendingShuffle=true;
+
+shuffleBtn.textContent="Ordered";
+
+}else{
+
+deck=[...cards]
+.sort((a,b)=>a.id-b.id);
+
+current=0;
+
+shuffleBtn.textContent="Shuffle";
+
+render();
+
+}
+
+saveState();
+
+}
+
+function shuffleArray(arr){
+
+for(let i=arr.length-1;i>0;i--){
+
+const j=Math.floor(
+Math.random()*(i+1)
+);
+
+[arr[i],arr[j]]=
+[arr[j],arr[i]];
+
+}
+
+}
+
+function confirmRestart(){
+
+document.getElementById(
+"restartModal"
+).style.display="flex";
+
+}
+
+function closeRestart(){
+
+document.getElementById(
+"restartModal"
+).style.display="none";
+
+}
+
+function restartSession(){
+
+current=0;
+
+knownCount=0;
+
+reviewDeck=[];
+
+cards.forEach(c=>{
+delete c.known;
+});
+
+deck = shuffleMode
+    ? [...cards]
+    : [...cards].sort((a,b)=>a.id-b.id);
+
+if(shuffleMode){
+shuffleArray(deck);
+}
+
+localStorage.removeItem("studyCurrent");
+localStorage.removeItem("studyKnown");
+localStorage.removeItem("reviewDeck");
+localStorage.removeItem("viewedQuestions");
+
+viewedQuestions = [];
+
+saveState();
+
+closeRestart();
+
+render();
+
+}
+
+let editIndex=0;
+
+function editCard(){
+
+editIndex=current;
+
+document.getElementById(
+"editQuestion"
+).value=
+deck[current].q;
+
+document.getElementById(
+"editAnswer"
+).value=
+deck[current].a.join("\n");
+
+document.getElementById(
+"modal"
+).style.display="flex";
+
+}
+
+function saveEdit(){
+
+deck[editIndex].q=
+document.getElementById(
+"editQuestion"
+).value;
+
+deck[editIndex].a=
+document.getElementById(
+"editAnswer"
+).value
+.split("\n")
+.filter(Boolean);
+
+localStorage.setItem(
+"editedCards",
+JSON.stringify(deck)
+);
+
+closeModal();
+
+render();
+
+}
+
+function closeModal(){
+
+document.getElementById(
+"modal"
+).style.display="none";
+
+}
+
+function exportData(){
+
+const data={
+
+cards:deck,
+reviewDeck,
+knownCount
+
+};
+
+const blob=new Blob(
+[JSON.stringify(data,null,2)],
+{type:"application/json"}
+);
+
+const a=
+document.createElement("a");
+
+a.href=
+URL.createObjectURL(blob);
+
+a.download=
+"citizenship-study-export.json";
+
+a.click();
+
+}
+
+function importData(event){
+
+const file=
+event.target.files[0];
+
+if(!file) return;
+
+const reader=
+new FileReader();
+
+reader.onload=function(e){
+
+try{
+
+const data=
+JSON.parse(e.target.result);
+
+if(data.cards)
+deck=data.cards;
+
+if(data.reviewDeck)
+reviewDeck=data.reviewDeck;
+
+if(data.knownCount)
+knownCount=data.knownCount;
+
+saveState();
+render();
+
+alert("Import Complete");
+
+}catch{
+
+alert("Invalid File");
+
+}
+
+};
+
+reader.readAsText(file);
+
+}
+
+function startReviewDeck(){
+
+reviewMode=true;
+
+if(reviewDeck.length===0){
+
+alert(
+"No review cards saved."
+);
+
+return;
+
+}
+
+deck=cards.filter(
+c=>reviewDeck.includes(c.id)
+);
+
+current=0;
+
+render();
+
+}
+
+let startX=0;
+
+document.addEventListener(
+"touchstart",
+e=>{
+startX=e.touches[0].clientX;
+}
+);
+
+document.addEventListener(
+"touchend",
+e=>{
+
+let diff=
+e.changedTouches[0].clientX
+-startX;
+
+if(diff<-50)
+nextCard();
+
+if(diff>50)
+previousCard();
+
+}
+);
+
+const edited=
+localStorage.getItem(
+"editedCards"
+);
+
+if(edited){
+
+try{
+
+deck=
+JSON.parse(edited);
+
+}catch{}
+
+}
+
+loadState();
+render();
+
+</script>
+
+</body>
+</html>
