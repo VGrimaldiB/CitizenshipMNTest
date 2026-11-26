@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
+<meta
+http-equiv="Content-Security-Policy"
+content="
+default-src 'self';
+script-src 'self' 'unsafe-inline';
+style-src 'self' 'unsafe-inline';
+img-src 'self' data:;
+object-src 'none';
+base-uri 'none';
+frame-ancestors 'none';
+">
+
 <title>Minnesota Citizenship Test Study</title>
 
 <style>
@@ -214,6 +226,19 @@ display:grid;
 grid-template-columns:repeat(4,1fr);
 gap:8px;
 }
+
+.modalButtons{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:6px;
+margin-top:10px;
+}
+
+.modalButtonsRestart{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:8px;
+}
 </style>
 </head>
 
@@ -247,27 +272,27 @@ Tap card to reveal answer
 </div>
 <div class="controls">
 
-<button class="good" onclick="markKnown()">
+<button class="good" id="btnKnown">
 ✓ I Knew It
 </button>
 
-<button class="warn" onclick="markReview()">
+<button class="warn" id="btnReview">
 📌 Review Later
 </button>
 
-<button class="primary" onclick="previousCard()">
+<button class="primary" id="btnPrevious">
 ◀ Previous
 </button>
 
-<button class="primary" onclick="nextCard()">
+<button class="primary" id="btnNext">
 Next ▶
 </button>
 
-<button class="primary" id="shuffleBtn" onclick="toggleShuffle()">
+<button class="primary" id="shuffleBtn">
 Shuffle
 </button>
 
-<button class="danger" onclick="confirmRestart()">
+<button class="danger" id="btnRestart">
 Restart
 </button>
 
@@ -275,19 +300,19 @@ Restart
 
 <div class="footer">
 
-<button class="secondary" onclick="editCard()">
+<button class="secondary" id="btnEdit">
 ✏ Edit
 </button>
 
-<button class="secondary" onclick="exportData()">
+<button class="secondary" id="btnExport">
 Export
 </button>
 
-<button class="secondary" onclick="document.getElementById('importInput').click()">
+<button class="secondary" id="btnImport">
 Import
 </button>
 
-<button class="secondary" onclick="startReviewDeck()">
+<button class="secondary" id="btnReviewDeck">
 Review Deck
 </button>
 
@@ -295,8 +320,7 @@ Review Deck
 
 <input id="importInput"
 type="file"
-accept=".json"
-onchange="importData(event)">
+accept=".json">
 
 </div>
 
@@ -311,13 +335,13 @@ onchange="importData(event)">
 <label>Answer(s)</label>
 <textarea id="editAnswer"></textarea>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;">
+<div class="modalButtons">
 
-<button class="primary" onclick="saveEdit()">
+<button class="primary" id="btnSaveEdit">
 Save
 </button>
 
-<button class="secondary" onclick="closeModal()">
+<button class="secondary" id="btnCancelEdit">
 Cancel
 </button>
 
@@ -336,15 +360,15 @@ Progress will reset.<br>
 Review Deck will be preserved.
 </p>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+<div class="modalButtonsRestart">
 
 <button class="secondary"
-onclick="closeRestart()">
+id="btnCancelRestart">
 Cancel
 </button>
 
 <button class="danger"
-onclick="restartSession()">
+id="btnConfirmRestart">
 Restart
 </button>
 
@@ -1383,17 +1407,51 @@ a:["A holiday to honor people in the (U.S.) military "]
 
 ];
 
+function safeLoadNumber(key){
+
+const value =
+Number(
+localStorage.getItem(key)
+);
+
+return Number.isFinite(value)
+? value
+: 0;
+
+}
+
+function safeLoadArray(key){
+
+try{
+
+const data =
+JSON.parse(
+localStorage.getItem(key) || "[]"
+);
+
+return Array.isArray(data)
+? data
+: [];
+
+}catch{
+
+return [];
+
+}
+
+}
+
 let deck=[...cards];
 let current=0;
 let revealed=false;
 let knownCount=0;
-let reviewDeck=JSON.parse(localStorage.getItem("reviewDeck")||"[]");
+let reviewDeck = safeLoadArray("reviewDeck");
 let shuffleMode=false;
 let pendingShuffle=false;
 let reviewMode=false;
 let reviewComplete=false;
 let mainDeckPosition=0;
-let viewedQuestions=JSON.parse(localStorage.getItem("viewedQuestions")||"[]");
+let viewedQuestions = safeLoadArray("viewedQuestions").filter(id =>Number.isInteger(id) && id > 0 && id <= cards.length);
 let mainDeckCurrentId = null;
 
 const card=document.getElementById("card");
@@ -1415,8 +1473,9 @@ localStorage.setItem("studyShuffle",shuffleMode);
 }
 
 function loadState(){
-current=parseInt(localStorage.getItem("studyCurrent")||0);
-knownCount=parseInt(localStorage.getItem("studyKnown")||0);
+current = Math.max(0,safeLoadNumber("studyCurrent"));
+knownCount = safeLoadNumber("studyKnown");
+reviewDeck = validateReviewDeck(reviewDeck);
 shuffleMode=localStorage.getItem("studyShuffle")==="true";
 shuffleBtn.textContent=shuffleMode?"Ordered":"Shuffle";
 
@@ -1424,6 +1483,20 @@ if(shuffleMode){
 deck=[...cards];
 shuffleArray(deck);
 }
+}
+
+function validateReviewDeck(data){
+
+if(!Array.isArray(data))
+return [];
+
+return data.filter(
+id=>
+Number.isInteger(id) &&
+id>0 &&
+id<=cards.length
+);
+
 }
 
 function updateStats(){
@@ -1440,16 +1513,8 @@ Math.max(
 cards.length - completed
 );
 
-stats.innerHTML =
-`
-✅ Known: ${knownCount}
-&nbsp;&nbsp; | &nbsp;&nbsp;
-📌 Review: ${reviewDeck.length}
-&nbsp;&nbsp; | &nbsp;&nbsp;
-✅ Completed: ${completed}
-&nbsp;&nbsp; | &nbsp;&nbsp;
-⏳ Remaining: ${remaining}
-`;
+stats.textContent =
+`✅ Known: ${knownCount} | 📌 Review: ${reviewDeck.length} | ✅ Completed: ${completed} | ⏳ Remaining: ${remaining}`;
 
 }
 
@@ -1539,6 +1604,8 @@ const currentId = deck[current].id;
 if(!viewedQuestions.includes(currentId)){
 
 viewedQuestions.push(currentId);
+
+viewedQuestions = [...new Set(viewedQuestions)];
 
 localStorage.setItem(
 "viewedQuestions",
@@ -1806,10 +1873,6 @@ knownCount=0;
 
 reviewDeck=[];
 
-cards.forEach(c=>{
-delete c.known;
-});
-
 deck = shuffleMode
     ? [...cards]
     : [...cards].sort((a,b)=>a.id-b.id);
@@ -1860,21 +1923,21 @@ document.getElementById(
 
 }
 
-function sanitize(text){
-
-return String(text)
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;")
-.replace(/"/g,"&quot;")
-.replace(/'/g,"&#39;");
-
-}
-
 function validateCard(card){
 
-if(typeof card !== "object")
+if(
+typeof card !== "object" ||
+card === null
+){
 return false;
+}
+
+if(
+Object.getPrototypeOf(card)
+!== Object.prototype
+){
+return false;
+}
 
 if(typeof card.id !== "number")
 return false;
@@ -1885,16 +1948,22 @@ return false;
 if(typeof card.sub !== "string")
 return false;
 
-if(typeof card.q !== "string")
+if(typeof card.q !== "string" ||
+card.q.length > 1000)
 return false;
 
 if(!Array.isArray(card.a))
 return false;
 
-if(card.a.some(
-answer => typeof answer !== "string"
-))
+if(
+card.a.some(
+answer =>
+typeof answer !== "string" ||
+answer.length > 1000
+)
+){
 return false;
+}
 
 return true;
 
@@ -1903,19 +1972,30 @@ return true;
 function saveEdit(){
 
 deck[editIndex].q=
-sanitize(
 document.getElementById(
 "editQuestion"
-).value
-);
+).value;
 
 deck[editIndex].a=
 document.getElementById(
 "editAnswer"
 ).value
 .split("\n")
-.filter(Boolean)
-.map(sanitize);
+.filter(Boolean);
+
+if(
+!validateCard(
+deck[editIndex]
+)
+){
+
+alert(
+"Invalid card."
+);
+
+return;
+
+}
 
 localStorage.setItem(
 "editedCards",
@@ -1938,17 +2018,27 @@ document.getElementById(
 
 function exportData(){
 
-const data={
+const data = Object.freeze({
 
-cards:deck,
-reviewDeck,
+cards:deck.filter(
+validateCard
+),
+
+reviewDeck:
+validateReviewDeck(
+reviewDeck
+),
+
 knownCount
 
-};
+});
 
 const blob=new Blob(
+
 [JSON.stringify(data,null,2)],
+
 {type:"application/json"}
+
 );
 
 const a=
@@ -2025,6 +2115,22 @@ data.cards.filter(
 validateCard
 );
 
+if(validCards.length > 500){
+
+throw new Error(
+"Too many cards."
+);
+
+}
+
+if(validCards.length !== data.cards.length){
+
+throw new Error(
+"Some cards are invalid."
+);
+
+}
+
 if(validCards.length===0){
 
 throw new Error(
@@ -2035,15 +2141,15 @@ throw new Error(
 
 deck=validCards.map(card=>({
 
-id:card.id,
+id:Number(card.id),
 
-section:sanitize(card.section),
+section:String(card.section),
 
-sub:sanitize(card.sub),
+sub:String(card.sub),
 
-q:sanitize(card.q),
+q:String(card.q),
 
-a:card.a.map(sanitize)
+a:card.a.map(String)
 
 }));
 
@@ -2055,7 +2161,10 @@ Array.isArray(data.reviewDeck)
 
 reviewDeck =
 data.reviewDeck.filter(
-id => typeof id === "number"
+id =>
+Number.isInteger(id) &&
+id > 0 &&
+id <= cards.length
 );
 
 }
@@ -2166,12 +2275,115 @@ if(edited){
 
 try{
 
-deck=
+const imported=
 JSON.parse(edited);
+
+if(
+Array.isArray(imported) &&
+imported.every(validateCard)
+){
+
+deck=imported;
+
+}
 
 }catch{}
 
 }
+
+document.getElementById("btnKnown")
+.addEventListener(
+"click",
+markKnown
+);
+
+document.getElementById("btnReview")
+.addEventListener(
+"click",
+markReview
+);
+
+document.getElementById("btnPrevious")
+.addEventListener(
+"click",
+previousCard
+);
+
+document.getElementById("btnNext")
+.addEventListener(
+"click",
+nextCard
+);
+
+document.getElementById("shuffleBtn")
+.addEventListener(
+"click",
+toggleShuffle
+);
+
+document.getElementById("btnRestart")
+.addEventListener(
+"click",
+confirmRestart
+);
+
+document.getElementById("btnEdit")
+.addEventListener(
+"click",
+editCard
+);
+
+document.getElementById("btnExport")
+.addEventListener(
+"click",
+exportData
+);
+
+document.getElementById("btnImport")
+.addEventListener(
+"click",
+()=>{
+document
+.getElementById("importInput")
+.click();
+}
+);
+
+document.getElementById("btnReviewDeck")
+.addEventListener(
+"click",
+startReviewDeck
+);
+
+document.getElementById("btnSaveEdit")
+.addEventListener(
+"click",
+saveEdit
+);
+
+document.getElementById("btnCancelEdit")
+.addEventListener(
+"click",
+closeModal
+);
+
+document.getElementById("btnCancelRestart")
+.addEventListener(
+"click",
+closeRestart
+);
+
+document.getElementById("btnConfirmRestart")
+.addEventListener(
+"click",
+restartSession
+);
+
+document.getElementById("importInput")
+.addEventListener(
+"change",
+importData
+);
 
 loadState();
 render();
